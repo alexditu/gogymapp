@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"os"
@@ -9,6 +10,7 @@ import (
 	"syscall"
 	"time"
 
+	gjwt "github.com/alexditu/gogymapp/internal/gjwt"
 	"github.com/alexditu/gogymapp/internal/logging"
 	"github.com/alexditu/gogymapp/internal/utils"
 	"github.com/gin-gonic/gin"
@@ -124,33 +126,41 @@ func (s *server) run() *http.Server {
 func (s *server) setupRoutes() {
 	s.router.MaxMultipartMemory = 8 << 20 // 8 MiB
 
-	// staticContentPath := s.getStaticContentPath()
-
-	// s.router.Use(favicon.New(staticContentPath + "/images/logo_red_transparent.png"))
-
 	// need by HTML Templating engine
-	// s.router.LoadHTMLGlob(staticContentPath + "/*.html")
+	s.router.LoadHTMLGlob(s.setts.HtmlPath + "/*.html")
 
-	// welcome page and static resources such as images
 	s.router.GET("/", func(c *gin.Context) {
 		c.Redirect(http.StatusFound, "/dashboard")
 	})
 
-	// s.router.Static("/static", staticContentPath)
+	s.router.Static("/static", s.setts.HtmlPath)
 
 	// REST API
 	api := s.router.Group("/api/v1")
 	{
 		auth := api.Group("/auth")
 		{
-			auth.GET("/login", s.login())
+			auth.POST("/loginCbk", s.loginCbk())
 		}
 	}
 
 }
 
-func (s *server) login() gin.HandlerFunc {
+func (s *server) loginCbk() gin.HandlerFunc {
 	return func(c *gin.Context) {
+		creds := c.PostForm("credential")
+		csrf_token := c.PostForm("g_csrf_token")
 
+		log.Infof("loginCbk: creds: %s, csrf_token: %s", creds, csrf_token)
+
+		claims, err := gjwt.ValidateGoogleJWT(c, s.setts.ClientId)
+		if err != nil {
+			c.Status(http.StatusUnauthorized)
+		}
+
+		j, _ := json.Marshal(*claims)
+		log.Infof("claims: %s", string(j))
+
+		c.Status(http.StatusOK)
 	}
 }

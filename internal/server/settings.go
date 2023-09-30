@@ -8,11 +8,20 @@ import (
 )
 
 type Settings struct {
-	Host     string
-	Port     uint16
-	CertPath string
-	KeyPath  string
-	Log      logging.Settings
+	Host string `json:"host"`
+	Port uint16 `json:"port"`
+
+	// TLS
+	CertPath string `json:"certPath"`
+	KeyPath  string `json:"keyPath"`
+
+	// path to static html pages
+	HtmlPath string `json:"htmlPath"`
+
+	Log logging.Settings `json:"log"`
+
+	// Sign-In With Google
+	ClientId string `json:"clientId"`
 }
 
 func (s *Settings) InitDefault() {
@@ -20,6 +29,7 @@ func (s *Settings) InitDefault() {
 	s.Port = 8443
 	s.CertPath = "./cert.pem"
 	s.KeyPath = "./key.pem"
+	s.KeyPath = "./html"
 	s.Log = logging.Settings{LogToFile: true, FileName: "server.log", Level: log.DebugLevel}
 }
 
